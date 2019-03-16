@@ -53,3 +53,5 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# Default build directory
+cmake-build
