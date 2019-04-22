@@ -810,6 +810,66 @@ kms_response_parser_test (void)
    kms_response_parser_destroy (parser);
 }
 
+#define CLEAR(_field) \
+   do { \
+      kms_request_str_destroy(_field); \
+      _field = kms_request_str_new(); \
+   } while (0)
+
+void
+kms_request_validate_fields_test (void)
+{
+   kms_request_t *request = NULL;
+   char *res = NULL;
+
+   // kms_request_str_t *region;
+   // kms_request_str_t *service;
+   // TODO: kms_request_str_t *access_key_id;
+   // kms_request_str_t *secret_key;
+   // kms_request_str_t *method;
+   // kms_request_str_t *path;
+   // kms_request_str_t *query;
+   // kms_request_str_t *payload;
+   // kms_request_str_t *datetime;
+   // kms_request_str_t *date;
+
+   request = make_test_request();
+   res = kms_request_get_signed (request);
+   printf("RESULT:\t%s\n", res);
+
+   kms_request_destroy (request);
+
+   request = make_test_request();
+   CLEAR (request->region);
+   res = kms_request_get_signed (request);
+
+   ASSERT (0 != strlen(request->error));
+   ASSERT (res == NULL);
+
+   kms_request_destroy (request);
+
+   request = make_test_request();
+   CLEAR (request->service);
+   res = kms_request_get_signed (request);
+
+   ASSERT (0 != strlen(request->error));
+   ASSERT (res == NULL);
+
+   kms_request_destroy (request);
+
+   request = make_test_request();
+   CLEAR (request->access_key_id);
+   res = kms_request_get_signed (request);
+
+   ASSERT (0 != strlen(request->error));
+   ASSERT (res == NULL);
+
+   printf("ERROR:\t%s\n", request->error);
+   printf("REQUEST:\t%s\n", res);
+
+   kms_request_destroy (request);
+}
+
 #define RUN_TEST(_func)                                      \
    do {                                                      \
       if (!selector || 0 == strcasecmp (#_func, selector)) { \
@@ -858,6 +918,7 @@ main (int argc, char *argv[])
    ran_tests |= all_aws_sig_v4_tests (aws_test_suite_dir, selector);
 
    RUN_TEST (kms_response_parser_test);
+   RUN_TEST (kms_request_validate_fields_test);
 
    if (!ran_tests) {
       assert (argc == 2);

@@ -610,6 +610,18 @@ done:
    return kms_request_str_detach (sig);
 }
 
+void
+kms_request_validate (kms_request_t *request) 
+{
+   if (0 == request->region->len) {
+      KMS_ERROR (request, "Region not set");
+   } else if (0 == request->service->len) {
+      KMS_ERROR (request, "Service not set");
+   } else if (0 == request->access_key_id->len) {
+      KMS_ERROR (request, "Access key ID not set");
+   }
+}
+
 char *
 kms_request_get_signed (kms_request_t *request)
 {
@@ -619,6 +631,7 @@ kms_request_get_signed (kms_request_t *request)
    kms_request_str_t *sreq = NULL;
    size_t i;
 
+   kms_request_validate (request);
    if (request->failed) {
       return NULL;
    }
