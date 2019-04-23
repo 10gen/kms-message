@@ -817,55 +817,49 @@ kms_response_parser_test (void)
    } while (0)
 
 void
-kms_request_validate_fields_test (void)
+kms_request_validate_test (void)
 {
    kms_request_t *request = NULL;
-   char *res = NULL;
-
-   // kms_request_str_t *region;
-   // kms_request_str_t *service;
-   // TODO: kms_request_str_t *access_key_id;
-   // kms_request_str_t *secret_key;
-   // kms_request_str_t *method;
-   // kms_request_str_t *path;
-   // kms_request_str_t *query;
-   // kms_request_str_t *payload;
-   // kms_request_str_t *datetime;
-   // kms_request_str_t *date;
-
-   request = make_test_request();
-   res = kms_request_get_signed (request);
-   printf("RESULT:\t%s\n", res);
-
-   kms_request_destroy (request);
 
    request = make_test_request();
    CLEAR (request->region);
-   res = kms_request_get_signed (request);
-
-   ASSERT (0 != strlen(request->error));
-   ASSERT (res == NULL);
-
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Region not set", kms_request_get_error (request));
+   
    kms_request_destroy (request);
 
    request = make_test_request();
    CLEAR (request->service);
-   res = kms_request_get_signed (request);
-
-   ASSERT (0 != strlen(request->error));
-   ASSERT (res == NULL);
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Service not set", kms_request_get_error (request));
 
    kms_request_destroy (request);
 
    request = make_test_request();
    CLEAR (request->access_key_id);
-   res = kms_request_get_signed (request);
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Access key ID not set", kms_request_get_error (request));
 
-   ASSERT (0 != strlen(request->error));
-   ASSERT (res == NULL);
+   kms_request_destroy (request);
 
-   printf("ERROR:\t%s\n", request->error);
-   printf("REQUEST:\t%s\n", res);
+   request = make_test_request();
+   CLEAR (request->method);
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Method not set", kms_request_get_error (request));
+
+   kms_request_destroy (request);
+
+   request = make_test_request();
+   CLEAR (request->path);
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Path not set", kms_request_get_error (request));
+
+   kms_request_destroy (request);
+
+   request = make_test_request();
+   CLEAR (request->date);
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Date not set", kms_request_get_error (request));
 
    kms_request_destroy (request);
 }
@@ -918,7 +912,7 @@ main (int argc, char *argv[])
    ran_tests |= all_aws_sig_v4_tests (aws_test_suite_dir, selector);
 
    RUN_TEST (kms_response_parser_test);
-   RUN_TEST (kms_request_validate_fields_test);
+   RUN_TEST (kms_request_validate_test);
 
    if (!ran_tests) {
       assert (argc == 2);

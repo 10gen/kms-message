@@ -619,6 +619,12 @@ kms_request_validate (kms_request_t *request)
       KMS_ERROR (request, "Service not set");
    } else if (0 == request->access_key_id->len) {
       KMS_ERROR (request, "Access key ID not set");
+   } else if (0 == request->method->len) {
+      KMS_ERROR (request, "Method not set");
+   } else if (0 == request->path->len) {
+      KMS_ERROR (request, "Path not set");
+   } else if (0 == request->date->len) {
+      KMS_ERROR (request, "Date not set");
    }
 }
 
