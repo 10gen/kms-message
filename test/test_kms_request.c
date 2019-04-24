@@ -862,6 +862,13 @@ kms_request_validate_test (void)
    ASSERT_CMPSTR ("Date not set", kms_request_get_error (request));
 
    kms_request_destroy (request);
+   
+   request = make_test_request();
+   CLEAR (request->secret_key);
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Secret key not set", kms_request_get_error (request));
+
+   kms_request_destroy (request);
 }
 
 #define RUN_TEST(_func)                                      \
