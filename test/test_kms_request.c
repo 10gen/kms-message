@@ -810,6 +810,67 @@ kms_response_parser_test (void)
    kms_response_parser_destroy (parser);
 }
 
+#define CLEAR(_field) \
+   do { \
+      kms_request_str_destroy(_field); \
+      _field = kms_request_str_new(); \
+   } while (0)
+
+void
+kms_request_validate_test (void)
+{
+   kms_request_t *request = NULL;
+
+   request = make_test_request();
+   CLEAR (request->region);
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Region not set", kms_request_get_error (request));
+   
+   kms_request_destroy (request);
+
+   request = make_test_request();
+   CLEAR (request->service);
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Service not set", kms_request_get_error (request));
+
+   kms_request_destroy (request);
+
+   request = make_test_request();
+   CLEAR (request->access_key_id);
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Access key ID not set", kms_request_get_error (request));
+
+   kms_request_destroy (request);
+
+   request = make_test_request();
+   CLEAR (request->method);
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Method not set", kms_request_get_error (request));
+
+   kms_request_destroy (request);
+
+   request = make_test_request();
+   CLEAR (request->path);
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Path not set", kms_request_get_error (request));
+
+   kms_request_destroy (request);
+
+   request = make_test_request();
+   CLEAR (request->date);
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Date not set", kms_request_get_error (request));
+
+   kms_request_destroy (request);
+   
+   request = make_test_request();
+   CLEAR (request->secret_key);
+   ASSERT ( NULL == kms_request_get_signed (request));
+   ASSERT_CMPSTR ("Secret key not set", kms_request_get_error (request));
+
+   kms_request_destroy (request);
+}
+
 #define RUN_TEST(_func)                                      \
    do {                                                      \
       if (!selector || 0 == strcasecmp (#_func, selector)) { \
@@ -858,6 +919,7 @@ main (int argc, char *argv[])
    ran_tests |= all_aws_sig_v4_tests (aws_test_suite_dir, selector);
 
    RUN_TEST (kms_response_parser_test);
+   RUN_TEST (kms_request_validate_test);
 
    if (!ran_tests) {
       assert (argc == 2);
