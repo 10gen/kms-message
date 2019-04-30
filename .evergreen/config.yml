@@ -1,0 +1,117 @@
+# Welcome. Evergreen configuration can be time consuming to modify and test.
+# So each script has a header comment describing how to run it locally.
+#
+# Some environment variables are hidden by ${inject_env_from_evergreen}.
+# This is set in the evergreen project.
+# View this in Evergreen => Projects => kms_message.
+#
+functions:
+  "fetch source":
+    - command: git.get_project
+      params: {directory: kms-message}
+    - command: shell.exec
+      params:
+        script: |-
+          set -o errexit
+          chmod u+x kms-message/.evergreen/*.sh
+          ./kms-message/.evergreen/print-env-info.sh
+
+  "tar and upload kms-message libraries":
+    - command: archive.targz_pack
+      params:
+        target: kms-message.tar.gz
+        source_dir: install/kms-message
+        include: [./**]
+    - command: s3.put
+      params:
+        aws_key: '${aws_key}'
+        aws_secret: '${aws_secret}'
+        remote_file: '${kms-message_s3_path}'
+        bucket: mciuploads
+        permissions: public-read
+        local_file: 'kms-message.tar.gz'
+        content_type: '${content_type|application/x-gzip}'
+
+  "build and test":
+    - command: "shell.exec"
+      params:
+        script: |-
+          eval "${inject_env_from_evergreen}"
+          ${compile_env|} ./kms-message/.evergreen/compile.sh
+          ${test_env|} ./kms-message/.evergreen/test.sh
+
+tasks:
+- name: build-and-test
+  commands:
+  - func: "fetch source"
+  - func: "build and test"
+  - func: "tar and upload kms-message libraries"
+
+- name: build-and-test-asan
+  commands:
+  - func: "fetch source"
+  - func: "build and test"
+    vars:
+      compile_env: KMS_MESSAGE_EXTRA_CFLAGS="-fsanitize=address"
+      test_env: ASAN_OPTIONS="detect_leaks=1" LSAN_OPTIONS="suppressions=.lsan-suppressions"
+  - func: "tar and upload kms-message libraries"
+
+- name: build-and-test-valgrind
+  commands:
+  - func: "fetch source"
+  - func: "build and test"
+    vars:
+      test_env: VALGRIND="valgrind --leak-check=full --error-exitcode=1"
+
+  - func: "tar and upload kms-message libraries"
+
+pre:
+  # Update the evergreen expansion to dynamically set the ${kms-message_s3_path} expansion.
+  # If this is a patch build, we want a URL specific to the patch, like:
+  # /mciuploads/kms-message/ubuntu1604/24411/build-and-test/kms-message_ubuntu1604_24411/kms-message.tar.gz
+  # If this is a waterfall build, we want a fixed "latest" URL, like:
+  # /mciuploads/kms-message/ubuntu1604/latest/kms-message.tar.gz
+  - command: "shell.exec"
+    params:
+      script: |-
+        REMOTE_PATH="${project}/${build_variant}/latest/kms-message.tar.gz"
+        if [ "${is_patch}" = "true" ]; then
+           REMOTE_PATH="${project}/${build_variant}/${revision}/${task_name}/${build_id}/kms-message.tar.gz"
+        fi
+        echo "kms-message_s3_path: $REMOTE_PATH"
+        echo "kms-message_s3_path: $REMOTE_PATH" > expansion.yml
+  - command: expansions.update
+    params:
+      file: expansion.yml
+
+buildvariants:
+- name: ubuntu1604
+  display_name: "Ubuntu 16.04"
+  run_on: ubuntu1604-test
+  tasks:
+  - build-and-test
+  - build-and-test-asan
+  - build-and-test-valgrind
+- name: rhel76
+  display_name: "RHEL 7.6"
+  run_on: rhel76-test
+  tasks:
+  - build-and-test
+  - build-and-test-asan
+- name: macos
+  display_name: "macOS 10.14"
+  run_on: macos-1014
+  tasks:
+  - build-and-test
+  - build-and-test-asan
+- name: rhel72-zseries-test
+  display_name: "RHEL 7.2 on zSeries"
+  run_on: rhel72-zseries-test
+  tasks:
+  - build-and-test
+  - build-and-test-asan
+- name: windows-test
+  display_name: "Windows 2016"
+  run_on: windows-64-vs2017-test
+  tasks:
+  - build-and-test
